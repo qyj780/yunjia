@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import ChatPanel from './chat-panel';
+import ProfilesPanel from './profiles-panel';
+import SettingsPanel from './settings-panel';
 import ReadingResult, { type ActualReading } from './reading-result';
 import { METHOD } from '@/lib/divination';
 import { useEffect, useState } from 'react';
@@ -17,7 +20,7 @@ const cards = [
   { title: '六爻问事', en: 'SIX LINES', desc: '观六爻变化，探事情始末', type: 'mountain', action: '问一事', icon: '☷' },
   { title: '八字排盘', en: 'FOUR PILLARS', desc: '识自己的节奏，寻人生方向', type: 'orbit', action: '排命盘', icon: '☯' },
 ];
-export default function Studio({ view }: { view: 'home' | 'result' | 'history' }) {
+export default function Studio({ view }: { view: 'home' | 'result' | 'history' | 'chat' | 'profiles' | 'settings' }) {
   const router = useRouter();
   const [question, setQuestion] = useState('');
   const [numbers, setNumbers] = useState(['', '', '']);
@@ -28,6 +31,9 @@ export default function Studio({ view }: { view: 'home' | 'result' | 'history' }
   const [modal, setModal] = useState('');
   const [mobileNav, setMobileNav] = useState(false);
   const [date, setDate] = useState('');
+  const [nickname,setNickname]=useState('');
+  const [search,setSearch]=useState('');
+  useEffect(()=>{const update=()=>{try{const value=JSON.parse(localStorage.getItem('yunjian.settings.v1')||'{}');setNickname(typeof value.nickname==='string'?value.nickname.slice(0,30):'');}catch{}};update();window.addEventListener('yunjian-settings',update);return()=>window.removeEventListener('yunjian-settings',update);},[]);
   useEffect(() => {
     setDate(new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }));
     let list: Reading[] = [];
@@ -60,24 +66,27 @@ export default function Studio({ view }: { view: 'home' | 'result' | 'history' }
       <Link className="brand" href="/"><span className="brand-mark">云</span><span><b>云 笺</b><small>一笺心事 · 一点启发</small></span></Link>
       <button className="mobile-toggle" aria-label="展开导航" aria-expanded={mobileNav} onClick={() => setMobileNav(!mobileNav)}><Menu size={22}/></button>
       <div className="sidebar-content">
-        <div className="welcome"><span>见字如晤，欢迎来到云笺</span><strong>把心事，慢慢说。</strong><button onClick={() => coming('登录 / 注册')}>登录 / 注册 <ArrowRight size={14}/></button></div>
+        <div className="welcome"><span>见字如晤，欢迎来到云笺</span><strong>{nickname ? nickname+'，见字如晤。' : '把心事，慢慢说。'}</strong><button onClick={() => router.push('/settings')}>设置我的称呼 <ArrowRight size={14}/></button></div>
         <nav aria-label="主导航">
           <Link className={view === 'home' ? 'active' : ''} href="/"><Home size={18}/>首页<span>01</span></Link>
           <Link className={view === 'history' ? 'active' : ''} href="/history"><History size={18}/>历史提问<span>02</span></Link>
-          <button onClick={() => coming('心事聊天')}><MessageCircle size={18}/>心事聊天<span>03</span></button>
-          <button onClick={() => coming('八字档案')}><BookOpen size={18}/>八字档案<span>04</span></button>
-          <button onClick={() => coming('个人中心')}><UserRound size={18}/>我的云笺<span>05</span></button>
+          <Link className={view==='chat'?'active':''} href="/chat"><MessageCircle size={18}/>心事聊天<span>03</span></Link>
+          <Link className={view==='profiles'?'active':''} href="/profiles"><BookOpen size={18}/>八字档案<span>04</span></Link>
+          <Link className={view==='settings'?'active':''} href="/settings"><UserRound size={18}/>我的云笺<span>05</span></Link>
         </nav>
         <div className="sidebar-poem"><span>静 心 · 观 己</span><p>且听风吟<br/>静待花开</p><img src="/landscape.svg" alt=""/></div>
-        <div className="sidebar-foot"><i/> 三数起卦版 <span>V.02</span></div>
+        <div className="sidebar-foot"><i/> 云笺生活版 <span>V.03</span></div>
       </div>
     </aside>
     <div className="workspace">
-      <header className="topbar"><span><Leaf size={14}/> 每日一笺 <i/> 心有清欢，岁月从容。</span><button onClick={() => coming('消息中心')} aria-label="消息中心"><MessageCircle size={17}/><i/></button></header>
+      <header className="topbar"><span><Leaf size={14}/> 每日一笺 <i/> 心有清欢，岁月从容。</span><button onClick={() => router.push('/chat')} aria-label="打开心事聊天"><MessageCircle size={17}/><i/></button></header>
       <div className="page-grid">
         <main>
-          <div className="page-heading"><div><span className="eyebrow">YUNJIAN · A MOMENT FOR YOURSELF</span><h1>{view === 'home' ? '问心有方，前路有光。' : view === 'history' ? '落在笺上的心事。' : '静观一卦，回望本心。'}</h1></div><span className="seal">问心</span></div>
+          <div className="page-heading"><div><span className="eyebrow">YUNJIAN · A MOMENT FOR YOURSELF</span><h1>{view === 'home' ? '问心有方，前路有光。' : view === 'history' ? '落在笺上的心事。' : view === 'chat' ? '一段心事，慢慢说。' : view === 'profiles' ? '知来处，识自己的节奏。' : view === 'settings' ? '属于你的，一方天地。' : '静观一卦，回望本心。'}</h1></div><span className="seal">问心</span></div>
           {error && <p className="error" role="alert">{error}</p>}
+          {view === 'chat' && <ChatPanel/>}
+          {view === 'profiles' && <ProfilesPanel/>}
+          {view === 'settings' && <SettingsPanel/>}
           {view === 'home' && <>
             <div className="assurances"><span><Sparkles/><b>传统智慧<small>以古意，启新思</small></b></span><span><ShieldCheck/><b>本地记录<small>历史留在此处</small></b></span><span><BookOpen/><b>清晰解读<small>让答案更易懂</small></b></span></div>
             <div className="question-grid">
@@ -89,13 +98,13 @@ export default function Studio({ view }: { view: 'home' | 'result' | 'history' }
               <section className="panel popular"><span className="eyebrow">A LITTLE INSPIRATION</span><h2>大家都在问</h2><p className="muted">也许，这里有你的心事</p><div>{questions.map((q, i) => <button key={q} onClick={() => {setQuestion(q); document.getElementById('question')?.focus();}}><span>0{i + 1}</span>{q}<ChevronRight size={13}/></button>)}</div><div className="popular-foot"><span>万千疑问，从一念开始</span><Leaf size={26}/></div></section>
             </div>
             <div className="section-heading"><h2><Compass size={19}/> 术数工具</h2><span>以传统智慧，照见生活</span></div>
-            <div className="tool-grid">{cards.map((c, i) => <button className={'tool-card ' + c.type} key={c.title} onClick={() => i === 0 ? document.getElementById('question')?.focus() : coming(c.title)}><span className="tool-en">{c.en}</span><h3><span>{c.icon}</span>{c.title}</h3><p>{c.desc}</p><span className="pill">{c.action} <ArrowRight size={13}/></span>{c.type === 'plum' ? <img src="/plum.svg" alt=""/> : c.type === 'mountain' ? <img src="/landscape.svg" alt=""/> : <span className="orbit-art">☯</span>}</button>)}</div>
+            <div className="tool-grid">{cards.map((c, i) => <button className={'tool-card ' + c.type} key={c.title} onClick={() => i === 0 ? document.getElementById('question')?.focus() : i === 2 ? router.push('/profiles') : coming(c.title)}><span className="tool-en">{c.en}</span><h3><span>{c.icon}</span>{c.title}</h3><p>{c.desc}</p><span className="pill">{c.action} <ArrowRight size={13}/></span>{c.type === 'plum' ? <img src="/plum.svg" alt=""/> : c.type === 'mountain' ? <img src="/landscape.svg" alt=""/> : <span className="orbit-art">☯</span>}</button>)}</div>
             <div className="section-heading"><h2><Sparkles size={19}/> 灵感与探索</h2><span>多一点好奇，多一种可能</span></div>
             <div className="tool-grid playful">{[{title:'正缘画像',desc:'描绘心中期待的相遇',type:'love',symbol:'缘'}, {title:'人生 K 线',desc:'换个视角，看人生起伏',type:'chart',symbol:'↗'}, {title:'能量头像',desc:'寻找与你共鸣的色彩',type:'avatar',symbol:'◉'}].map(c => <button className={'tool-card '+c.type} key={c.title} onClick={() => coming(c.title)}><span className="tiny-tag">即将上线</span><h3>{c.title}</h3><p>{c.desc}</p><span className="text-link">去探索 <ArrowRight size={13}/></span><span className="play-art">{c.symbol}</span></button>)}</div>
             <div className="bottom-note"><span>一笺寄心，万事可期。</span><small>慢一点，答案也许就在心里。</small><Leaf/></div>
           </>}
           {view === 'result' && <section className="panel result-panel">{!ready ? <p>正在展开云笺……</p> : current ? <>{current.method === METHOD ? <ReadingResult key={current.id} reading={current}/> : <><span className="tag">演示数据 · 非真实排盘</span><h2>{current.question}</h2><p className="muted">{new Date(current.createdAt).toLocaleString('zh-CN')} · 数字 {current.numbers.join(' / ')}</p><div className="hexagram"><div aria-label="演示卦象：风山渐">{[true,true,false,true,false,false].map((solid,i)=><div className={'hex-line '+(solid?'solid':'')} key={i}><i/><i/></div>)}</div><div><span className="eyebrow">DEMO READING</span><h3>风山渐</h3><p>循序而进，静待其成</p></div></div><div className="reading-copy"><h3>一笺解读</h3><p>这份演示以“渐进”为主题：面对悬而未决的事情，可以先把目光放回自己能够掌握的一小步。给变化留一点时间，也给自己一些耐心。</p><h3>此刻，可以做的三件事</h3><ol><li>写下你真正期待的结果，区分事实与猜测。</li><li>选择一个今天就能完成的小行动。</li><li>留一个回顾的时间，再决定下一步。</li></ol><p className="demo-note">本页为固定示例，所有输入均展示相同卦象与文案；数字仅用于演示提问流程，未参与真实起卦或 AI 推断。内容用于文化体验与自我思考。</p>{!records.some(r=>r.id===current.id) && <p className="demo-note">此结果仅保存在当前会话，未能写入长期历史记录。</p>}</div></>}<div className="result-actions"><Link className="primary" href="/">重新提问 <ArrowRight size={16}/></Link><Link className="secondary" href="/history">查看历史</Link></div></> : <div className="empty"><BookOpen size={38}/><h2>这张云笺还未写下</h2><p>记录可能已删除，或来自其他浏览器。</p><Link className="primary" href="/">开始提问</Link></div>}</section>}
-          {view === 'history' && <section className="panel history-panel"><div className="section-top"><h2>历史提问</h2><span className="tag">{records.length} 张云笺</span></div><p className="muted">仅保存在当前浏览器，最多保留 100 条；清除浏览器数据后将无法恢复。</p>{!ready ? <p>正在读取……</p> : records.length ? records.map(r => <article className="history-row" key={r.id}><Link href={'/result?id='+r.id}><span className="eyebrow">{new Date(r.createdAt).toLocaleString('zh-CN')} · {r.method === METHOD ? '三数起卦' : '旧版演示'}</span><h3>{r.question}</h3><small>起念数字 · {r.numbers.join(' / ')}</small></Link><button className="delete-button" aria-label={'删除：'+r.question} onClick={() => remove(r.id)}><Trash2 size={17}/></button></article>) : <div className="empty"><History size={36}/><h3>这里，等着你的第一张云笺</h3><p>写下问题，留住此刻的思绪。</p><Link href="/" className="primary">去提问 <ArrowRight size={16}/></Link></div>}</section>}
+          {view === 'history' && <section className="panel history-panel"><div className="section-top"><h2>历史提问</h2><span className="tag">{records.length} 张云笺</span></div><p className="muted">仅保存在当前浏览器，最多保留 100 条；清除浏览器数据后将无法恢复。</p><label className="history-search"><span className="sr-only">搜索历史提问</span><input placeholder="搜索你的心事…" value={search} onChange={e=>setSearch(e.target.value)}/></label>{ready && records.length>0 && !records.some(r=>r.question.includes(search.trim())) && <p className="muted">没有找到匹配的提问。</p>}{!ready ? <p>正在读取……</p> : records.length ? records.filter(r=>r.question.includes(search.trim())).map(r => <article className="history-row" key={r.id}><Link href={'/result?id='+r.id}><span className="eyebrow">{new Date(r.createdAt).toLocaleString('zh-CN')} · {r.method === METHOD ? '三数起卦' : '旧版演示'}</span><h3>{r.question}</h3><small>起念数字 · {r.numbers.join(' / ')}</small></Link><button className="delete-button" aria-label={'删除：'+r.question} onClick={() => remove(r.id)}><Trash2 size={17}/></button></article>) : <div className="empty"><History size={36}/><h3>这里，等着你的第一张云笺</h3><p>写下问题，留住此刻的思绪。</p><Link href="/" className="primary">去提问 <ArrowRight size={16}/></Link></div>}</section>}
           <footer>云笺 YUNJIAN <span>·</span> 传统文化的当代表达 <span>·</span> 文化体验，仅供自我探索</footer>
         </main>
         <aside className="right-column"><section className="panel daily"><div className="section-top"><h2><Sun size={23}/> 今日指引</h2><span className="tag">每日一笺</span></div><strong className="date">{date || '今日'}</strong><span className="muted">放慢脚步，与自己相处</span><div className="daily-divider"/><p><span className="yi">宜</span> 静心阅读 · 整理思绪 · 向前一步</p><p><span className="ji">缓</span> 冲动决定 · 过度内耗 · 急于求成</p><blockquote>“ 心有山海，静而不争。 ”</blockquote><small>生活灵感 · 非历法运势推算</small></section><section className="membership"><span className="eyebrow">A LETTER TO YOURSELF</span><h2>留一方静处<br/>听内心回响</h2><p>把纷繁交给风<br/>把答案留给时间</p><div className="gold-orbit"><span>笺</span></div><button onClick={() => coming('云笺会员')}>探索更多可能 <ArrowRight size={16}/></button><span className="membership-note">会员功能 · 即将上线</span></section><div className="side-caption"><Leaf size={15}/> 万物有时，愿你从容。</div></aside>

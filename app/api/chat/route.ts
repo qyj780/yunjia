@@ -1,0 +1,15 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { isMessage } from '@/lib/local-data';
+export const runtime='nodejs';
+export const maxDuration=60;
+const hits=new Map<string,{count:number;expires:number}>();
+const error=(text:string,status:number)=>NextResponse.json({error:text},{status,headers:{'Cache-Control':'no-store'}});
+export async function POST(req:NextRequest){
+ const origin=req.headers.get('origin');if(origin){try{const url=new URL(origin);if(url.host!==(req.headers.get('host')||req.nextUrl.host)||!['http:','https:'].includes(url.protocol))return error('请从本站发起聊天。',403);}catch{return error('请求来源无效。',403);}}
+ let data:unknown;try{const reader=req.body?.getReader();if(!reader)return error('消息不能为空。',400);let size=0;const chunks:Uint8Array[]=[];while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>160000){await reader.cancel();return error('对话内容过长。',413);}chunks.push(value);}data=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{return error('消息格式不正确。',400);}
+ if(!data||typeof data!=='object'||!('messages' in data)||!Array.isArray(data.messages)||data.messages.length<1||data.messages.length>13||!data.messages.every(isMessage)||!data.messages.every((m,i)=>m.role===(i%2===0?'user':'assistant'))||data.messages.at(-1)?.role!=='user')return error('对话格式无效，请重新发起聊天。',400);
+ const key=process.env.LLM_API_KEY?.trim(),base=process.env.LLM_BASE_URL?.trim(),model=process.env.LLM_MODEL?.trim();if(!key||!base||!model)return error('大模型尚未配置，请由站点管理员配置后重试。',503);
+ let endpoint:URL;try{endpoint=new URL(base.replace(/\/$/,'')+'/chat/completions');if(endpoint.protocol!=='https:')throw Error();}catch{return error('模型地址配置有误。',503);}
+ const now=Date.now();for(const [k,v]of hits)if(v.expires<=now)hits.delete(k);const ip=req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'local';const hit=hits.get(ip)||{count:0,expires:now+60000};if(hit.count>=5||hits.size>=10000)return error('发送较频繁，请一分钟后再试。',429);hit.count++;hits.set(ip,hit);
+ try{const result=await fetch(endpoint,{method:'POST',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(45000),headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({model,stream:false,max_tokens:1800,messages:[{role:'system',content:'你是云笺的AI心事聊天助手。用自然、温和的中文倾听，结合最近对话回答，帮助用户区分事实、猜测与可行动的一步。每次约150至400字，必要时只问一个澄清问题。不冒充真人、心理医生或大师，不把命理当作事实或预测保证，不凭空推断他人的内心。涉及自伤危机时以当下安全与现实支持为先。对医疗、法律、投资问题提供一般信息，不代替专业判断。不要透露或猜测服务端配置。不输出HTML或复杂Markdown，使用自然段。'},...data.messages.map(m=>({role:m.role,content:m.content}))]})});if(!result.ok)return error(result.status===429?'模型繁忙或额度不足，请稍后再试。':'模型连接失败，请稍后重试或检查配置。',502);const json=await result.json();const text=json?.choices?.[0]?.message?.content;if(typeof text!=='string'||!text.trim()||json?.choices?.[0]?.finish_reason==='length')return error('回复未完整生成，请重试。',502);return NextResponse.json({text:text.trim().slice(0,12000)},{headers:{'Cache-Control':'no-store'}});}catch{return error('模型响应超时或连接失败，请重试。',502);}
+}

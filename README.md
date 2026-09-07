@@ -31,6 +31,8 @@ npm run dev
 
 ## 配置大模型
 
+DeepSeek V4 适配：对 `api.deepseek.com` 的 `deepseek-v4-*` 模型显式发送 `thinking: {type: "disabled"}`，让短篇聊天与解读直接生成最终回答；输出上限为4096 tokens。思考内容不会作为最终回答展示或保存。官方说明：https://api-docs.deepseek.com/guides/thinking_mode/ 。执行 `node tests/deepseek.cjs` 验证两个接口的参数与异常返回（模拟测试）。使用此项目时选择下方Chat Completions基础地址，不使用 `/anthropic` 地址。
+
 复制 `.env.example` 为 `.env.local`，填写 LLM_BASE_URL、LLM_MODEL、LLM_API_KEY。基础地址不包含 `/chat/completions`，必须为HTTPS。配置后重启本地服务。密钥仅在服务端读取，不要加NEXT_PUBLIC_前缀或提交真实密钥。
 
 例如 DeepSeek（模型名以实时文档及账户权限为准）：

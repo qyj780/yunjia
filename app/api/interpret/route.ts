@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     const upstream = await fetch(endpoint, {
       method: 'POST', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(45_000),
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages: [{ role: 'system', content: prompt }, { role: 'user', content: JSON.stringify({ question: question.trim(), divination: divine(numbers) }) }], stream: false, max_tokens: 1800 }),
+      body: JSON.stringify({ model, messages: [{ role: 'system', content: prompt }, { role: 'user', content: JSON.stringify({ question: question.trim(), divination: divine(numbers) }) }], stream: false, max_tokens: 4096, ...(endpoint.hostname === 'api.deepseek.com' && model.startsWith('deepseek-v4-') ? { thinking: { type: 'disabled' } } : {}) }),
     });
     if (!upstream.ok) {
       if (upstream.status === 429) return response('模型服务繁忙或额度不足，请稍后重试。', 429);
@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
     }
     const data = await upstream.json();
     const text = data?.choices?.[0]?.message?.content;
-    if (typeof text !== 'string' || !text.trim()) return response('模型未返回有效解读，请重试。', 502);
-    if (data?.choices?.[0]?.finish_reason === 'length') return response('本次解读未生成完整，请重试。', 502);
+    if (data?.choices?.[0]?.finish_reason === 'length') return response('模型已达到输出长度上限，未生成完整解读，请重试。', 502);
+    if (typeof text !== 'string' || !text.trim()) return response(data?.choices?.[0]?.message?.reasoning_content ? '模型仅返回思考内容，没有最终解读。请确认已部署最新的 DeepSeek 适配代码。' : '模型未返回有效解读，请检查模型名称和接口地址后重试。', 502);
     return NextResponse.json({ text: text.trim().slice(0, 12000), model, generatedAt: new Date().toISOString() }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     return response(e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError') ? '模型响应超时，卦象已保留，请稍后重试。' : '暂时无法连接模型服务，请稍后重试。', 502);

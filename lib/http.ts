@@ -1,0 +1,4 @@
+import { NextRequest,NextResponse } from 'next/server';
+export const json=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'Cache-Control':'private, no-store'}});
+export function sameOrigin(req:NextRequest){try{const origin=req.headers.get('origin');return !!origin&&new URL(origin).host===(req.headers.get('host')||req.nextUrl.host)&&['http:','https:'].includes(new URL(origin).protocol);}catch{return false;}}
+export async function boundedJSON(req:NextRequest,max:number){const reader=req.body?.getReader();if(!reader)throw Error('EMPTY');let total=0;const chunks:Uint8Array[]=[];while(true){const {value,done}=await reader.read();if(done)break;total+=value.length;if(total>max){await reader.cancel();throw Error('TOO_LARGE');}chunks.push(value);}return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;}

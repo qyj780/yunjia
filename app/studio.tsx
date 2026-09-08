@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import ChatPanel from './chat-panel';
+import AccountPanel from './account-panel';
 import ProfilesPanel from './profiles-panel';
 import SettingsPanel from './settings-panel';
 import ReadingResult, { type ActualReading } from './reading-result';
@@ -20,7 +21,7 @@ const cards = [
   { title: '六爻问事', en: 'SIX LINES', desc: '观六爻变化，探事情始末', type: 'mountain', action: '问一事', icon: '☷' },
   { title: '八字排盘', en: 'FOUR PILLARS', desc: '识自己的节奏，寻人生方向', type: 'orbit', action: '排命盘', icon: '☯' },
 ];
-export default function Studio({ view }: { view: 'home' | 'result' | 'history' | 'chat' | 'profiles' | 'settings' }) {
+export default function Studio({ view }: { view: 'home' | 'result' | 'history' | 'chat' | 'profiles' | 'settings' | 'account' }) {
   const router = useRouter();
   const [question, setQuestion] = useState('');
   const [numbers, setNumbers] = useState(['', '', '']);
@@ -66,8 +67,8 @@ export default function Studio({ view }: { view: 'home' | 'result' | 'history' |
       <Link className="brand" href="/"><span className="brand-mark">云</span><span><b>云 笺</b><small>一笺心事 · 一点启发</small></span></Link>
       <button className="mobile-toggle" aria-label="展开导航" aria-expanded={mobileNav} onClick={() => setMobileNav(!mobileNav)}><Menu size={22}/></button>
       <div className="sidebar-content">
-        <div className="welcome"><span>见字如晤，欢迎来到云笺</span><strong>{nickname ? nickname+'，见字如晤。' : '把心事，慢慢说。'}</strong><button onClick={() => router.push('/settings')}>设置我的称呼 <ArrowRight size={14}/></button></div>
-        <nav aria-label="主导航">
+        <div className="welcome"><span>见字如晤，欢迎来到云笺</span><strong>{nickname ? nickname+'，见字如晤。' : '把心事，慢慢说。'}</strong><button onClick={() => router.push('/account')}>登录 / 注册 <ArrowRight size={14}/></button></div>
+        <nav aria-label="主导航"><Link className={view === 'account' ? 'active' : ''} href="/account"><UserRound size={18}/>账户与云端<span>06</span></Link>
           <Link className={view === 'home' ? 'active' : ''} href="/"><Home size={18}/>首页<span>01</span></Link>
           <Link className={view === 'history' ? 'active' : ''} href="/history"><History size={18}/>历史提问<span>02</span></Link>
           <Link className={view==='chat'?'active':''} href="/chat"><MessageCircle size={18}/>心事聊天<span>03</span></Link>
@@ -82,8 +83,9 @@ export default function Studio({ view }: { view: 'home' | 'result' | 'history' |
       <header className="topbar"><span><Leaf size={14}/> 每日一笺 <i/> 心有清欢，岁月从容。</span><button onClick={() => router.push('/chat')} aria-label="打开心事聊天"><MessageCircle size={17}/><i/></button></header>
       <div className="page-grid">
         <main>
-          <div className="page-heading"><div><span className="eyebrow">YUNJIAN · A MOMENT FOR YOURSELF</span><h1>{view === 'home' ? '问心有方，前路有光。' : view === 'history' ? '落在笺上的心事。' : view === 'chat' ? '一段心事，慢慢说。' : view === 'profiles' ? '知来处，识自己的节奏。' : view === 'settings' ? '属于你的，一方天地。' : '静观一卦，回望本心。'}</h1></div><span className="seal">问心</span></div>
+          <div className="page-heading"><div><span className="eyebrow">YUNJIAN · A MOMENT FOR YOURSELF</span><h1>{view === 'home' ? '问心有方，前路有光。' : view === 'history' ? '落在笺上的心事。' : view === 'chat' ? '一段心事，慢慢说。' : view === 'profiles' ? '知来处，识自己的节奏。' : view === 'account' ? '让每一张云笺，有归处。' : view === 'settings' ? '属于你的，一方天地。' : '静观一卦，回望本心。'}</h1></div><span className="seal">问心</span></div>
           {error && <p className="error" role="alert">{error}</p>}
+          {view === 'account' && <AccountPanel/>}
           {view === 'chat' && <ChatPanel/>}
           {view === 'profiles' && <ProfilesPanel/>}
           {view === 'settings' && <SettingsPanel/>}

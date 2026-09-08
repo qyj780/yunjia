@@ -1,5 +1,17 @@
 # 云笺 · 问心有方
 
+## V0.4 账户与数据库
+
+当前工作目录：`E:\yunjian`。新增 `/account` 邮箱登录、注册、邮箱验证回调、忘记密码、修改密码、退出登录，以及用户主动确认的云端资料保存和恢复。
+
+启用步骤见 `supabase/SETUP.md`；建表脚本是 `supabase/migrations/001_accounts.sql`。需在你自己的 Supabase 项目执行脚本，再配置 `SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`、`SITE_URL`。云端项目和真实邮件尚未配置，页面不会创建假账户。
+
+当前预览为 `http://localhost:3001/account`。若在3001端口测试真实邮件回调，SITE_URL与Supabase的Redirect URLs也要使用3001；默认 `npm run dev` 使用3000。
+
+已通过生产构建、账户接口模拟测试、浏览器注册/登录/重置/云端操作模拟测试，以及本地PostgreSQL兼容引擎的RLS隔离、匿名拒绝和版本冲突测试。真实邮件与线上数据库仍需配置后联调。
+
+迁移后此目录的 `.git` 元数据不完整，目前不能直接 `git push`。源码不受影响，可将完整代码上传到原GitHub仓库；不要上传 `.env.local`、`.work`、`.next`、node_modules或ZIP文件本身。也可以在有写权限的新目录克隆原仓库，再复制本项目源码进入该仓库提交。
+
 Next.js、TypeScript、Tailwind CSS 国风网站。SVG与CSS装饰为原创，无外部图片或字体请求。当前为 V0.3，新增心事聊天、八字档案与排盘、个人设置和数据备份。
 
 ## V0.3 新功能
@@ -30,8 +42,6 @@ npm run dev
 打开 http://localhost:3000 。生产模式执行 `npm run build` 和 `npm start`。`npm run typecheck` 检查类型；`node tests/reading.cjs` 检查384种卦象/动爻组合及模拟API错误，不调用付费模型。
 
 ## 配置大模型
-
-DeepSeek V4 适配：对 `api.deepseek.com` 的 `deepseek-v4-*` 模型显式发送 `thinking: {type: "disabled"}`，让短篇聊天与解读直接生成最终回答；输出上限为4096 tokens。思考内容不会作为最终回答展示或保存。官方说明：https://api-docs.deepseek.com/guides/thinking_mode/ 。执行 `node tests/deepseek.cjs` 验证两个接口的参数与异常返回（模拟测试）。使用此项目时选择下方Chat Completions基础地址，不使用 `/anthropic` 地址。
 
 复制 `.env.example` 为 `.env.local`，填写 LLM_BASE_URL、LLM_MODEL、LLM_API_KEY。基础地址不包含 `/chat/completions`，必须为HTTPS。配置后重启本地服务。密钥仅在服务端读取，不要加NEXT_PUBLIC_前缀或提交真实密钥。
 
